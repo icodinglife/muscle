@@ -1,0 +1,36 @@
+syntax = "proto3";
+
+option java_multiple_files = true;
+option java_package = "com.macho.muscle.core.cluster.proto";
+option java_outer_classname = "MuscleTransferProto";
+
+message NodeInfo {
+  string host = 1;
+  int32 port = 2;
+}
+
+message ActorInfo {
+  string id = 1;
+  string service = 2;
+  NodeInfo nodeInfo = 3;
+}
+
+message TransferMessage {
+  int32 type = 1;
+  ActorInfo sourceActorInfo = 2;
+  ActorInfo targetActorInfo = 3;
+  bytes data = 4;
+}
+
+message TransferMessageRequest {
+  TransferMessage message = 1;
+}
+
+message TransferMessageResponse {
+  int32 code = 1;
+  string msg = 2;
+}
+
+service MuscleTransfer {
+  rpc transfer(TransferMessageRequest) returns (TransferMessageResponse);
+}

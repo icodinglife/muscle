@@ -1,19 +1,18 @@
-package com.macho.muscle.core.node;
+package com.macho.muscle.core.cluster.node;
 
 import lombok.*;
 
 @Data
 @Builder
-@NoArgsConstructor
 @AllArgsConstructor
 public class NodeInfo {
-    private String host;
-    private int port;
+    private final String host;
+    private final int port;
 
     /**
      * host:port
      */
-    public String getNodeInfo() {
+    public String getNodeHostPort() {
         return String.format("%s:%d", host, port);
     }
 }

@@ -27,8 +27,16 @@
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.compiler.compilerVersion>1.8</maven.compiler.compilerVersion>
 
-        <grpc.version>1.48.1</grpc.version>
+        <grpc.version>1.49.0</grpc.version>
         <protoc.version>3.21.1</protoc.version>
+        <jetcd.version>0.6.1</jetcd.version>
+        <jctools-core.version>3.3.0</jctools-core.version>
+        <reflectasm.version>1.11.9</reflectasm.version>
+        <groovy.version>3.0.8</groovy.version>
+        <spock-bom.version>2.0-groovy-3.0</spock-bom.version>
+        <kryo5.version>5.3.0</kryo5.version>
+        <gson.version>2.9.1</gson.version>
+        <commons.collection4.version>4.3</commons.collection4.version>
     </properties>
 
     <modules>
@@ -52,23 +60,15 @@
             <dependency>
                 <groupId>org.jctools</groupId>
                 <artifactId>jctools-core</artifactId>
-                <version>3.3.0</version>
+                <version>${jctools-core.version}</version>
             </dependency>
             <!-- jctools -->
-
-            <!-- disruptor -->
-            <dependency>
-                <groupId>com.lmax</groupId>
-                <artifactId>disruptor</artifactId>
-                <version>3.4.4</version>
-            </dependency>
-            <!-- disruptor -->
 
             <!-- ReflectAsm -->
             <dependency>
                 <groupId>com.esotericsoftware</groupId>
                 <artifactId>reflectasm</artifactId>
-                <version>1.11.9</version>
+                <version>${reflectasm.version}</version>
             </dependency>
             <!-- ReflectAsm -->
 
@@ -76,13 +76,13 @@
             <dependency>
                 <groupId>org.codehaus.groovy</groupId>
                 <artifactId>groovy</artifactId>
-                <version>3.0.8</version>
+                <version>${groovy.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>org.spockframework</groupId>
                 <artifactId>spock-bom</artifactId>
-                <version>2.0-groovy-3.0</version>
+                <version>${spock-bom.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -92,9 +92,33 @@
             <dependency>
                 <groupId>com.esotericsoftware.kryo</groupId>
                 <artifactId>kryo5</artifactId>
-                <version>5.3.0</version>
+                <version>${kryo5.version}</version>
             </dependency>
             <!-- Kryo -->
+
+            <!-- jetcd -->
+            <dependency>
+                <groupId>io.etcd</groupId>
+                <artifactId>jetcd-core</artifactId>
+                <version>${jetcd.version}</version>
+            </dependency>
+            <!-- jetcd -->
+
+            <!-- Gson -->
+            <dependency>
+                <groupId>com.google.code.gson</groupId>
+                <artifactId>gson</artifactId>
+                <version>${gson.version}</version>
+            </dependency>
+            <!-- Gson -->
+
+            <!-- commons-collections4 -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-collections4</artifactId>
+                <version>${commons.collection4.version}</version>
+            </dependency>
+            <!-- commons-collections4 -->
         </dependencies>
     </dependencyManagement>
 
@@ -190,46 +214,6 @@
                 <configuration>
                     <useModulePath>false
                     </useModulePath> <!-- https://issues.apache.org/jira/browse/SUREFIRE-1809 -->
-                    <useFile>false</useFile>
-                    <includes>
-                        <include>**/*Test.java</include>
-                        <include>**/*Spec.groovy</include>
-                    </includes>
-                    <statelessTestsetReporter
-                            implementation="org.apache.maven.plugin.surefire.extensions.junit5.JUnit5Xml30StatelessReporter">
-                        <disable>false</disable>
-                        <version>3.0</version>
-                        <usePhrasedFileName>false</usePhrasedFileName>
-                        <usePhrasedTestSuiteClassName>true</usePhrasedTestSuiteClassName>
-                        <usePhrasedTestCaseClassName>true</usePhrasedTestCaseClassName>
-                        <usePhrasedTestCaseMethodName>true</usePhrasedTestCaseMethodName>
-                    </statelessTestsetReporter>
-                </configuration>
-            </plugin>
-
-            <!-- Mandatory plugins for using Spock -->
-            <plugin>
-                <!-- The gmavenplus plugin is used to compile Groovy code. To learn more about this plugin,
-                visit https://github.com/groovy/GMavenPlus/wiki -->
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>1.12.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>compileTests</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-            <!-- Optional plugins for using Spock -->
-            <!-- Only required if names of spec classes don't match default Surefire patterns (`*Test` etc.) -->
-            <plugin>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.0.0-M5</version>
-                <configuration>
-                    <useModulePath>false</useModulePath> <!-- https://issues.apache.org/jira/browse/SUREFIRE-1809 -->
                     <useFile>false</useFile>
                     <includes>
                         <include>**/*Test.java</include>

@@ -1,6 +1,6 @@
 package com.macho.muscle.core.actor;
 
-import com.macho.muscle.core.node.NodeInfo;
+import com.macho.muscle.core.cluster.node.NodeInfo;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -19,6 +19,6 @@ public class ActorInfo {
      * /service/id@node:port
      */
     public String getActorPath() {
-        return String.format("/%s/%s@%s", service, id, nodeInfo.getNodeInfo());
+        return String.format("/%s/%s@%s", service, id, nodeInfo.getNodeHostPort());
     }
 }

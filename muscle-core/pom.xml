@@ -60,6 +60,11 @@
         </dependency>
         <!-- common-lang -->
 
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
+        </dependency>
+
         <!-- jctools -->
         <dependency>
             <groupId>org.jctools</groupId>
@@ -98,6 +103,20 @@
             <artifactId>kryo5</artifactId>
         </dependency>
         <!-- Kryo -->
+
+        <!-- jetcd -->
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-core</artifactId>
+        </dependency>
+        <!-- jetcd -->
+
+        <!-- Gson -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+        </dependency>
+        <!-- Gson -->
 
         <dependency>
             <groupId>org.projectlombok</groupId>

@@ -16,6 +16,10 @@ public enum ActorMessageType {
         this.code = _code;
     }
 
+    public int getCode() {
+        return this.code;
+    }
+
     private static final Map<Integer, ActorMessageType> codeToTypeMap;
 
     static {
