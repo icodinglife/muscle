@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.apache.commons.lang3.StringUtils;
 
 @Data
 @Builder
@@ -16,9 +17,15 @@ public class ActorInfo {
     private NodeInfo nodeInfo;
 
     /**
-     * /service/id@node:port
+     * /prefix/service/id@node:port
      */
-    public String getActorPath() {
-        return String.format("/%s/%s@%s", service, id, nodeInfo.getNodeHostPort());
+    public String getActorPath(String servicePrefix) {
+        return String.format("%s%s/%s@%s:%d",
+                servicePrefix,
+                StringUtils.firstNonBlank(getService(), "-"),
+                getId(),
+                getNodeInfo().getHost(),
+                getNodeInfo().getPort()
+        );
     }
 }

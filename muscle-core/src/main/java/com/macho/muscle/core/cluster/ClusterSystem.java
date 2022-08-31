@@ -1,6 +1,7 @@
 package com.macho.muscle.core.cluster;
 
 import com.google.common.collect.Maps;
+import com.macho.muscle.core.actor.ActorInfo;
 import com.macho.muscle.core.cluster.node.ClusterNode;
 import com.macho.muscle.core.cluster.node.NodeInfo;
 import com.macho.muscle.core.cluster.registry.EtcdRegistry;
@@ -31,8 +32,8 @@ public class ClusterSystem {
 
     private final ScheduledExecutorService scheduledExecutorService = newSingleThreadScheduledExecutor();
 
-    private final Map<String, ClusterNode> remoteServicePathToClusterNodeMap = Maps.newConcurrentMap();
-    private final Map<String, ServiceInfo> localServicePathToServiceInfoMap = Maps.newConcurrentMap();
+    private final Map<String, Map<String, ClusterNode>> remoteServiceNameToClusterNodesMap = Maps.newConcurrentMap();
+    private final Map<String, ActorInfo> localActorPathToActorInfoMap = Maps.newConcurrentMap();
 
     public ClusterSystem(String etcdAddr, int nodePort) {
         try {
@@ -73,50 +74,55 @@ public class ClusterSystem {
         clusterServer.awaitTermination();
     }
 
-    public void fetchRemoteServices() {
+    public void fetchRemoteActors() {
         registry.watchPrefix(SERVICE_PREFIX,
-                (addServiceInfoList) -> {
-                    setupRemoteServices(addServiceInfoList);
+                (addActorInfoList) -> {
+                    setupRemoteActors(addActorInfoList);
                 },
-                (removeServiceInfoList) -> {
-                    // todo
+                (removeActorInfoList) -> {
+                    removeRemoteActors(removeActorInfoList);
                 });
 
-        CompletableFuture<List<ServiceInfo>> servicesWithName = registry.getServicesWithName(SERVICE_PREFIX);
-        servicesWithName.whenComplete((serviceInfoList, err) -> {
+        CompletableFuture<List<ActorInfo>> servicesWithName = registry.getActorsWithName(SERVICE_PREFIX);
+        servicesWithName.whenComplete((actorInfoList, err) -> {
             if (err != null) {
                 log.error("get service info from registry error", err);
                 return;
             }
 
-            setupRemoteServices(serviceInfoList);
+            setupRemoteActors(actorInfoList);
         });
     }
 
-    private void removeRemoteServices(List<ServiceInfo> serviceInfoList) {
-        if (CollectionUtils.isNotEmpty(serviceInfoList)) {
-            for (ServiceInfo serviceInfo : serviceInfoList) {
-                ClusterNode clusterNode = remoteServicePathToClusterNodeMap.remove(serviceInfo.getServicePath());
-                if (clusterNode != null) {
-                    clusterNode.disconnect();
+    private void removeRemoteActors(List<ActorInfo> actorInfoList) {
+        if (CollectionUtils.isNotEmpty(actorInfoList)) {
+            for (ActorInfo actorInfo : actorInfoList) {
+                if (remoteServiceNameToClusterNodesMap.containsKey(actorInfo.getService())) {
+                    Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(actorInfo.getService());
+                    if (actorIdToClusterNodeMap != null) {
+                        ClusterNode clusterNode = actorIdToClusterNodeMap.remove(actorInfo.getId());
+                        if (clusterNode != null) {
+                            clusterNode.disconnect();
+                        }
+                    }
                 }
             }
         }
     }
 
-    private void setupRemoteServices(List<ServiceInfo> serviceInfoList) {
-        if (CollectionUtils.isNotEmpty(serviceInfoList)) {
-            for (ServiceInfo serviceInfo : serviceInfoList) {
-                remoteServicePathToClusterNodeMap.computeIfAbsent(
-                        serviceInfo.getServicePath(),
-                        (k) -> {
-                            NodeInfo remoteNodeInfo = serviceInfo.getNodeInfo();
+    private void setupRemoteActors(List<ActorInfo> actorInfoList) {
+        if (CollectionUtils.isNotEmpty(actorInfoList)) {
+            for (ActorInfo actorInfo : actorInfoList) {
+                Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap
+                        .computeIfAbsent(actorInfo.getService(), (k) -> Maps.newConcurrentMap());
 
-                            ClusterGrpcClient client = new ClusterGrpcClient(remoteNodeInfo);
+                actorIdToClusterNodeMap.computeIfAbsent(actorInfo.getId(), (k) -> {
+                    NodeInfo remoteNodeInfo = actorInfo.getNodeInfo();
 
-                            return new ClusterNode(remoteNodeInfo, client);
-                        }
-                );
+                    ClusterGrpcClient client = new ClusterGrpcClient(remoteNodeInfo);
+
+                    return new ClusterNode(remoteNodeInfo, client);
+                });
             }
         }
     }
@@ -127,31 +133,25 @@ public class ClusterSystem {
         }
     }
 
-    public void registerService(String serviceName) {
-        if (StringUtils.isBlank(serviceName)) {
-            throw new IllegalArgumentException("service name can't be null or blank");
+    public void registerActor(ActorInfo actorInfo) {
+        if (actorInfo == null || StringUtils.isBlank(actorInfo.getId())) {
+            throw new IllegalArgumentException("actor id can't be null or blank");
         }
 
-        String servicePath = wrapServicePath(serviceName);
+        String actorPath = wrapActorPath(actorInfo);
 
-        ServiceInfo serviceInfo = localServicePathToServiceInfoMap.computeIfAbsent(
-                servicePath,
-                (k) -> ServiceInfo.builder()
-                        .servicePath(servicePath)
-                        .serviceName(serviceName)
-                        .nodeInfo(this.nodeInfo)
-                        .build());
+        localActorPathToActorInfoMap.putIfAbsent(actorPath, actorInfo);
 
-        registry.registry(servicePath, serviceInfo, LEASE_SECONDS);
+        registry.registry(actorPath, actorInfo, LEASE_SECONDS);
     }
 
-    private String wrapServicePath(String serviceName) {
-        return String.format("%s%s@%s:%d", SERVICE_PREFIX, serviceName, this.nodeInfo.getHost(), this.nodeInfo.getPort());
+    private String wrapActorPath(ActorInfo actorInfo) {
+        return actorInfo.getActorPath(SERVICE_PREFIX);
     }
 
     private void keepAllServiceAlive() {
-        if (MapUtils.isNotEmpty(localServicePathToServiceInfoMap)) {
-            for (Map.Entry<String, ServiceInfo> entry : localServicePathToServiceInfoMap.entrySet()) {
+        if (MapUtils.isNotEmpty(localActorPathToActorInfoMap)) {
+            for (Map.Entry<String, ActorInfo> entry : localActorPathToActorInfoMap.entrySet()) {
                 registry.registry(entry.getKey(), entry.getValue(), LEASE_SECONDS);
             }
         }

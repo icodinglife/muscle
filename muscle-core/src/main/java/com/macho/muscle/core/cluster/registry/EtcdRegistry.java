@@ -1,7 +1,7 @@
 package com.macho.muscle.core.cluster.registry;
 
 import com.google.common.collect.Lists;
-import com.macho.muscle.core.cluster.ServiceInfo;
+import com.macho.muscle.core.actor.ActorInfo;
 import com.macho.muscle.core.utils.JsonUtil;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
@@ -31,10 +31,10 @@ public class EtcdRegistry implements Registry {
     }
 
     @Override
-    public CompletableFuture<Boolean> registry(String key, ServiceInfo serviceInfo, long leaseSeconds) {
+    public CompletableFuture<Boolean> registry(String key, ActorInfo actorInfo, long leaseSeconds) {
         CompletableFuture<Boolean> resultFuture = new CompletableFuture<>();
 
-        String value = JsonUtil.toJsonString(serviceInfo);
+        String value = JsonUtil.toJsonString(actorInfo);
 
         ByteSequence keyByteSeq = ByteSequence.from(key, CHARSET_UTF8);
         ByteSequence valueByteSeq = ByteSequence.from(value, CHARSET_UTF8);
@@ -70,8 +70,8 @@ public class EtcdRegistry implements Registry {
     }
 
     @Override
-    public CompletableFuture<List<ServiceInfo>> getServicesWithName(String keyPrefix) {
-        CompletableFuture<List<ServiceInfo>> resultFuture = new CompletableFuture<>();
+    public CompletableFuture<List<ActorInfo>> getActorsWithName(String keyPrefix) {
+        CompletableFuture<List<ActorInfo>> resultFuture = new CompletableFuture<>();
 
         GetOption getOption = GetOption.newBuilder()
                 .isPrefix(true)
@@ -86,26 +86,26 @@ public class EtcdRegistry implements Registry {
                 return;
             }
 
-            List<ServiceInfo> resultServiceInfoList = Lists.newArrayList();
+            List<ActorInfo> resultActorInfoList = Lists.newArrayList();
 
             if (getResult != null && CollectionUtils.isNotEmpty(getResult.getKvs())) {
                 List<KeyValue> kvs = getResult.getKvs();
                 for (KeyValue kv : kvs) {
-                    ServiceInfo serviceInfo = JsonUtil.fromJsonString(
-                            kv.getValue().toString(CHARSET_UTF8), ServiceInfo.class);
+                    ActorInfo actorInfo = JsonUtil.fromJsonString(
+                            kv.getValue().toString(CHARSET_UTF8), ActorInfo.class);
 
-                    resultServiceInfoList.add(serviceInfo);
+                    resultActorInfoList.add(actorInfo);
                 }
             }
 
-            resultFuture.complete(resultServiceInfoList);
+            resultFuture.complete(resultActorInfoList);
         });
 
         return resultFuture;
     }
 
     @Override
-    public void watchPrefix(String keyPrefix, Consumer<List<ServiceInfo>> onAddCallback, Consumer<List<ServiceInfo>> onRemoveCallback) {
+    public void watchPrefix(String keyPrefix, Consumer<List<ActorInfo>> onAddCallback, Consumer<List<ActorInfo>> onRemoveCallback) {
         ByteSequence keyPrefixByteSeq = ByteSequence.from(keyPrefix, CHARSET_UTF8);
 
         WatchOption watchOption = WatchOption.newBuilder()
@@ -116,28 +116,28 @@ public class EtcdRegistry implements Registry {
             if (watchResponse != null) {
                 List<WatchEvent> events = watchResponse.getEvents();
                 if (CollectionUtils.isNotEmpty(events)) {
-                    List<ServiceInfo> addServiceInfoList = Lists.newArrayList();
-                    List<ServiceInfo> removeServiceInfoList = Lists.newArrayList();
+                    List<ActorInfo> addActorInfoList = Lists.newArrayList();
+                    List<ActorInfo> removeActorInfoList = Lists.newArrayList();
 
                     for (WatchEvent event : events) {
-                        ServiceInfo serviceInfo = JsonUtil.fromJsonString(
+                        ActorInfo actorInfo = JsonUtil.fromJsonString(
                                 event.getKeyValue().getValue().toString(CHARSET_UTF8),
-                                ServiceInfo.class
+                                ActorInfo.class
                         );
 
                         if (event.getEventType().equals(WatchEvent.EventType.PUT)) {
-                            addServiceInfoList.add(serviceInfo);
+                            addActorInfoList.add(actorInfo);
                         }
                         if (event.getEventType().equals(WatchEvent.EventType.DELETE)) {
-                            removeServiceInfoList.add(serviceInfo);
+                            removeActorInfoList.add(actorInfo);
                         }
                     }
 
-                    if (CollectionUtils.isNotEmpty(addServiceInfoList)) {
-                        onAddCallback.accept(addServiceInfoList);
+                    if (CollectionUtils.isNotEmpty(addActorInfoList)) {
+                        onAddCallback.accept(addActorInfoList);
                     }
-                    if (CollectionUtils.isNotEmpty(removeServiceInfoList)) {
-                        onRemoveCallback.accept(removeServiceInfoList);
+                    if (CollectionUtils.isNotEmpty(removeActorInfoList)) {
+                        onRemoveCallback.accept(removeActorInfoList);
                     }
                 }
             }

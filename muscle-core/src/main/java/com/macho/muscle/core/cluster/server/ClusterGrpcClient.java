@@ -1,7 +1,6 @@
 package com.macho.muscle.core.cluster.server;
 
 import com.google.protobuf.ByteString;
-import com.macho.muscle.core.actor.ActorMessage;
 import com.macho.muscle.core.cluster.node.NodeInfo;
 import com.macho.muscle.core.cluster.proto.ActorInfo;
 import com.macho.muscle.core.cluster.proto.MuscleTransferGrpc;

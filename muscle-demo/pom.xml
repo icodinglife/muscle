@@ -52,19 +52,19 @@
         </dependency>
         <!-- grpc -->
 
-        <!-- disruptor -->
-        <dependency>
-            <groupId>com.lmax</groupId>
-            <artifactId>disruptor</artifactId>
-        </dependency>
-        <!-- disruptor -->
-
         <!-- ReflectAsm -->
         <dependency>
             <groupId>com.esotericsoftware</groupId>
             <artifactId>reflectasm</artifactId>
         </dependency>
         <!-- ReflectAsm -->
+
+        <!-- jetcd -->
+        <dependency>
+            <groupId>io.etcd</groupId>
+            <artifactId>jetcd-core</artifactId>
+        </dependency>
+        <!-- jetcd -->
 
         <dependency>
             <groupId>org.projectlombok</groupId>
@@ -98,5 +98,4 @@
             </plugin>
         </plugins>
     </build>
-
 </project>
