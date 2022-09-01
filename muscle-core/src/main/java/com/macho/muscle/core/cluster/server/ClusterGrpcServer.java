@@ -1,5 +1,6 @@
 package com.macho.muscle.core.cluster.server;
 
+import com.macho.muscle.core.actor.ActorSystem;
 import com.macho.muscle.core.cluster.node.NodeInfo;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -13,9 +14,9 @@ public class ClusterGrpcServer {
     private final GrpcMessageTransportService grpcMessageTransportService;
     private Server server;
 
-    public ClusterGrpcServer(NodeInfo nodeInfo) {
+    public ClusterGrpcServer(NodeInfo nodeInfo, ActorSystem actorSystem) {
         this.nodeInfo = nodeInfo;
-        this.grpcMessageTransportService = new GrpcMessageTransportService();
+        this.grpcMessageTransportService = new GrpcMessageTransportService(actorSystem);
     }
 
     public Server start() throws IOException {

@@ -7,6 +7,20 @@ public class ActorRef {
     private final ActorInfo actorInfo;
     private final ActorSystem actorSystem;
 
+    private final boolean remote;
+
+    public ActorRef(ActorInfo actorInfo, ActorSystem actorSystem) {
+        this.actorInfo = actorInfo;
+        this.actorSystem = actorSystem;
+        this.remote = false;
+    }
+
+    public ActorRef(ActorInfo actorInfo, ActorSystem actorSystem, boolean remote) {
+        this.actorInfo = actorInfo;
+        this.actorSystem = actorSystem;
+        this.remote = remote;
+    }
+
     public <M> void send(ActorRef sourceActorRef, M message) {
         UserActorMessage<M> actorMessage = UserActorMessage.<M>builder()
                 .sourceActorRef(sourceActorRef)
@@ -14,6 +28,10 @@ public class ActorRef {
                 .data(message)
                 .build();
 
-        actorSystem.dispatch(actorMessage);
+        if (remote) {
+            actorSystem.dispatchRemoteMessage(actorMessage);
+        } else {
+            actorSystem.dispatch(actorMessage);
+        }
     }
 }

@@ -1,14 +1,18 @@
 package com.macho.muscle.core.actor.invoke;
 
+import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
 @Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class ReflectInvokeRequestMessage implements IReflectInvokeMessage {
-    private final Long id;
-    private final String methodName;
-    private final Object[] args;
+    private Long id;
+    private String methodName;
+    private Object[] args;
 
     @Override
     public Long getId() {

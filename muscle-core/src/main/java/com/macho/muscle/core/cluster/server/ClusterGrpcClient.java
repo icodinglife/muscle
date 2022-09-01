@@ -1,13 +1,13 @@
 package com.macho.muscle.core.cluster.server;
 
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.protobuf.ByteString;
 import com.macho.muscle.core.cluster.node.NodeInfo;
-import com.macho.muscle.core.cluster.proto.ActorInfo;
-import com.macho.muscle.core.cluster.proto.MuscleTransferGrpc;
-import com.macho.muscle.core.cluster.proto.TransferMessage;
-import com.macho.muscle.core.cluster.proto.TransferMessageRequest;
+import com.macho.muscle.core.cluster.proto.*;
 import com.macho.muscle.core.cluster.transport.MessageTransport;
 import com.macho.muscle.core.cluster.transport.TransportActorMessage;
+import com.macho.muscle.core.exception.ActorMessageTransportException;
 import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 
@@ -50,10 +50,30 @@ public class ClusterGrpcClient implements MessageTransport {
                         .build())
                 .build();
 
-        muscleTransferFutureStub.transfer(transferMessageRequest);
+        CompletableFuture<Void> resultFuture = new CompletableFuture<>();
 
-        // todo process result future
-        return null;
+        ListenableFuture<TransferMessageResponse> transferFuture = muscleTransferFutureStub.transfer(transferMessageRequest);
+        transferFuture.addListener(() -> {
+            String errMsg = null;
+            try {
+                TransferMessageResponse transferMessageResponse = transferFuture.get();
+                if (transferMessageResponse.getCode().equals(TransferMessageResponse.ResponseCode.SUCCESS)) {
+
+                    resultFuture.complete(null);
+
+                    return;
+                } else {
+                    errMsg = transferMessageResponse.getMsg();
+                }
+            } catch (Exception e) {
+                errMsg = e.getMessage();
+            }
+
+            resultFuture.completeExceptionally(
+                    new ActorMessageTransportException(message.getTargetActorInfo().toString(), errMsg));
+        }, MoreExecutors.directExecutor());
+
+        return resultFuture;
     }
 
     @Override

@@ -1,8 +1,10 @@
 package com.macho.muscle.core.actor.invoke;
 
 import com.macho.muscle.core.actor.*;
+import com.macho.muscle.core.cluster.node.ClusterNode;
 
 import java.lang.reflect.Proxy;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class ReflectInvokeActorSystem extends ActorSystem {
@@ -13,11 +15,10 @@ public class ReflectInvokeActorSystem extends ActorSystem {
 
     public ReflectInvokeActorSystem(String systemName, int parallelism) {
         super(systemName, parallelism);
-
-        init();
     }
 
-    private void init() {
+    // todo split from constructor
+    public void init() {
         this.reflectInvokeNoSender = (ReflectInvokeNoSender) registerActor(
                 "System-ReflectInvokeNoSender",
                 "ReflectInvokeNoSender",
@@ -48,8 +49,43 @@ public class ReflectInvokeActorSystem extends ActorSystem {
         );
     }
 
+    public <T> T newRemoteReflectInvokeProxy(String id, String serviceName, Class<T> targetClass) {
+        ActorRef actorRef = buildActorRef(id, serviceName, true);
+
+        return (T) Proxy.newProxyInstance(
+                targetClass.getClassLoader(),
+                new Class[]{targetClass},
+                new DynamicInvokeProxy(actorRef, this)
+        );
+    }
+
     public ReflectInvokeNoSender getReflectInvokeNoSender() {
         return reflectInvokeNoSender;
     }
 
+    @Override
+    public <T> void dispatchRemoteMessage(UserActorMessage<T> actorMessage) {
+        checkClusterSystem();
+
+        ActorInfo targetActorInfo = actorMessage.getTargetActorRef().getActorInfo();
+        String targetService = targetActorInfo.getService();
+        String targetActorId = targetActorInfo.getId();
+
+        ClusterNode targetClusterNode = clusterSystem.getClusterNodeWithServiceAndActorId(targetService, targetActorId);
+        CompletableFuture<Void> transferFuture = targetClusterNode.transferRemoteMessage(buildTransportActorMessage(actorMessage));
+        transferFuture.whenComplete((v, err) -> {
+            if (err != null) {
+                ReflectInvokeResponseMessage response = ReflectInvokeResponseMessage.builder()
+                        .id(((IReflectInvokeMessage) actorMessage.getData()).getId())
+                        .build();
+                UserActorMessage responseActorMessage = UserActorMessage.builder()
+                        .sourceActorRef(actorMessage.getTargetActorRef())
+                        .targetActorRef(actorMessage.getSourceActorRef())
+                        .data(response)
+                        .build();
+
+                dispatch(responseActorMessage);
+            }
+        });
+    }
 }

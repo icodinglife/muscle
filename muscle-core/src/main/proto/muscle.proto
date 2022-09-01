@@ -27,7 +27,12 @@ message TransferMessageRequest {
 }
 
 message TransferMessageResponse {
-  int32 code = 1;
+  enum ResponseCode {
+    SUCCESS = 0;
+    FAILURE = 1;
+  }
+
+  ResponseCode code = 1;
   string msg = 2;
 }
 

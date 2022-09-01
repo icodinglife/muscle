@@ -1,7 +1,9 @@
 package com.macho.muscle.core.cluster;
 
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.macho.muscle.core.actor.ActorInfo;
+import com.macho.muscle.core.actor.ActorSystem;
 import com.macho.muscle.core.cluster.node.ClusterNode;
 import com.macho.muscle.core.cluster.node.NodeInfo;
 import com.macho.muscle.core.cluster.registry.EtcdRegistry;
@@ -35,7 +37,7 @@ public class ClusterSystem {
     private final Map<String, Map<String, ClusterNode>> remoteServiceNameToClusterNodesMap = Maps.newConcurrentMap();
     private final Map<String, ActorInfo> localActorPathToActorInfoMap = Maps.newConcurrentMap();
 
-    public ClusterSystem(String etcdAddr, int nodePort) {
+    public ClusterSystem(String etcdAddr, int nodePort, ActorSystem actorSystem) {
         try {
             this.registry = new EtcdRegistry(etcdAddr);
 
@@ -44,7 +46,7 @@ public class ClusterSystem {
                     .port(nodePort)
                     .build();
 
-            this.clusterServer = new ClusterGrpcServer(this.nodeInfo);
+            this.clusterServer = new ClusterGrpcServer(this.nodeInfo, actorSystem);
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -56,6 +58,10 @@ public class ClusterSystem {
                 TimeUnit.SECONDS);
     }
 
+    public NodeInfo getNodeInfo() {
+        return nodeInfo;
+    }
+
     public void start() {
         if (clusterServer == null) {
             throw new IllegalStateException("ClusterServer not initialized");
@@ -63,6 +69,8 @@ public class ClusterSystem {
 
         try {
             clusterServer.start();
+
+            fetchRemoteActors();
         } catch (Exception e) {
             throw new IllegalStateException(e);
         }
@@ -74,7 +82,19 @@ public class ClusterSystem {
         clusterServer.awaitTermination();
     }
 
-    public void fetchRemoteActors() {
+    public void registerActor(ActorInfo actorInfo) {
+        if (actorInfo == null || StringUtils.isBlank(actorInfo.getId())) {
+            throw new IllegalArgumentException("actor id can't be null or blank");
+        }
+
+        String actorPath = wrapActorPath(actorInfo);
+
+        localActorPathToActorInfoMap.putIfAbsent(actorPath, actorInfo);
+
+        registry.registry(actorPath, actorInfo, LEASE_SECONDS);
+    }
+
+    private void fetchRemoteActors() {
         registry.watchPrefix(SERVICE_PREFIX,
                 (addActorInfoList) -> {
                     setupRemoteActors(addActorInfoList);
@@ -92,6 +112,20 @@ public class ClusterSystem {
 
             setupRemoteActors(actorInfoList);
         });
+    }
+
+    public List<String> getActorIdsWithService(String serviceName) {
+        Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(serviceName);
+
+        return Lists.newArrayList(actorIdToClusterNodeMap.keySet());
+    }
+
+    public ClusterNode getClusterNodeWithServiceAndActorId(String service, String actorId) {
+        Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(service);
+        if (MapUtils.isNotEmpty(actorIdToClusterNodeMap)) {
+            return actorIdToClusterNodeMap.get(actorId);
+        }
+        return null;
     }
 
     private void removeRemoteActors(List<ActorInfo> actorInfoList) {
@@ -133,22 +167,11 @@ public class ClusterSystem {
         }
     }
 
-    public void registerActor(ActorInfo actorInfo) {
-        if (actorInfo == null || StringUtils.isBlank(actorInfo.getId())) {
-            throw new IllegalArgumentException("actor id can't be null or blank");
-        }
-
-        String actorPath = wrapActorPath(actorInfo);
-
-        localActorPathToActorInfoMap.putIfAbsent(actorPath, actorInfo);
-
-        registry.registry(actorPath, actorInfo, LEASE_SECONDS);
-    }
-
     private String wrapActorPath(ActorInfo actorInfo) {
         return actorInfo.getActorPath(SERVICE_PREFIX);
     }
 
+    // todo modify alive, should be lease from actor
     private void keepAllServiceAlive() {
         if (MapUtils.isNotEmpty(localActorPathToActorInfoMap)) {
             for (Map.Entry<String, ActorInfo> entry : localActorPathToActorInfoMap.entrySet()) {

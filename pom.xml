@@ -29,7 +29,7 @@
 
         <grpc.version>1.49.0</grpc.version>
         <protoc.version>3.21.1</protoc.version>
-        <jetcd.version>0.6.1</jetcd.version>
+        <jetcd.version>0.7.3</jetcd.version>
         <jctools-core.version>3.3.0</jctools-core.version>
         <reflectasm.version>1.11.9</reflectasm.version>
         <groovy.version>3.0.8</groovy.version>
