@@ -20,13 +20,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.*;
 
 @Slf4j
 public class ClusterSystem {
-    private static final long LEASE_SECONDS = 60L;
+    public static final long LEASE_SECONDS = 60L;
     private static final String SERVICE_PREFIX = "/muscle/services/";
     private final Registry registry;
     private final NodeInfo nodeInfo;
@@ -51,11 +50,11 @@ public class ClusterSystem {
             throw new IllegalStateException(e);
         }
 
-        scheduledExecutorService.scheduleAtFixedRate(
-                this::keepAllServiceAlive,
-                LEASE_SECONDS / 2,
-                LEASE_SECONDS / 2,
-                TimeUnit.SECONDS);
+//        scheduledExecutorService.scheduleAtFixedRate(
+//                this::keepAllServiceAlive,
+//                LEASE_SECONDS / 2,
+//                LEASE_SECONDS / 2,
+//                TimeUnit.SECONDS);
     }
 
     public NodeInfo getNodeInfo() {
@@ -82,7 +81,15 @@ public class ClusterSystem {
         clusterServer.awaitTermination();
     }
 
-    public void registerActor(ActorInfo actorInfo) {
+    public CompletableFuture<Long> keepAlive(long leaseId) {
+        checkClusterServer();
+
+        CompletableFuture<Long> keepAliveFuture = registry.keepAlive(leaseId);
+
+        return keepAliveFuture;
+    }
+
+    public CompletableFuture<Long> registerActor(ActorInfo actorInfo) {
         if (actorInfo == null || StringUtils.isBlank(actorInfo.getId())) {
             throw new IllegalArgumentException("actor id can't be null or blank");
         }
@@ -91,7 +98,7 @@ public class ClusterSystem {
 
         localActorPathToActorInfoMap.putIfAbsent(actorPath, actorInfo);
 
-        registry.registry(actorPath, actorInfo, LEASE_SECONDS);
+        return registry.registry(actorPath, actorInfo, LEASE_SECONDS);
     }
 
     private void fetchRemoteActors() {
@@ -171,12 +178,12 @@ public class ClusterSystem {
         return actorInfo.getActorPath(SERVICE_PREFIX);
     }
 
-    // todo modify alive, should be lease from actor
-    private void keepAllServiceAlive() {
-        if (MapUtils.isNotEmpty(localActorPathToActorInfoMap)) {
-            for (Map.Entry<String, ActorInfo> entry : localActorPathToActorInfoMap.entrySet()) {
-                registry.registry(entry.getKey(), entry.getValue(), LEASE_SECONDS);
-            }
-        }
-    }
+//    // todo modify alive, should be lease from actor
+//    private void keepAllServiceAlive() {
+//        if (MapUtils.isNotEmpty(localActorPathToActorInfoMap)) {
+//            for (Map.Entry<String, ActorInfo> entry : localActorPathToActorInfoMap.entrySet()) {
+//                registry.registry(entry.getKey(), entry.getValue(), LEASE_SECONDS);
+//            }
+//        }
+//    }
 }

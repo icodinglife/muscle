@@ -7,7 +7,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 public interface Registry {
-    CompletableFuture<Boolean> registry(String key, ActorInfo actorInfo, long lease);
+    CompletableFuture<Long> registry(String key, ActorInfo actorInfo, long lease);
+
+    CompletableFuture<Long> keepAlive(long leaseKey);
 
     CompletableFuture<List<ActorInfo>> getActorsWithName(String keyPrefix);
 

@@ -7,6 +7,8 @@ import com.macho.muscle.core.cluster.transport.TransportActorMessage;
 import com.macho.muscle.core.exception.ActorNotFoundException;
 import com.macho.muscle.core.exception.TargetActorRejectException;
 import com.macho.muscle.core.utils.KryoUtil;
+import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timer;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
@@ -20,6 +22,8 @@ public class ActorSystem {
     private final Executor executor;
 
     private final Map<String, ActorRunner> actorIdToActorRunnerMap = Maps.newConcurrentMap();
+
+    private final Timer timer = new HashedWheelTimer();
 
     protected ClusterSystem clusterSystem;
 
@@ -44,7 +48,11 @@ public class ActorSystem {
 
     }
 
-    public ActorRunner registerActor(String id, String serviceName, Function<ActorRef, ActorRunner> actorBuilder) {
+    public Timer getTimer() {
+        return timer;
+    }
+
+    public ActorRunner registerActor(String id, String serviceName, boolean publish, Function<ActorRef, ActorRunner> actorBuilder) {
         return actorIdToActorRunnerMap.computeIfAbsent(id, k -> {
             ActorRef actorRef = buildActorRef(id, serviceName);
 
@@ -52,8 +60,16 @@ public class ActorSystem {
 
             actorRunner.offer(SystemActorMessage.START_MESSAGE);
 
+            if (publish) {
+                actorRunner.offer(SystemActorMessage.PUBLISH_MESSAGE);
+            }
+
             return actorRunner;
         });
+    }
+
+    public ActorRunner registerActor(String id, String serviceName, Function<ActorRef, ActorRunner> actorBuilder) {
+        return registerActor(id, serviceName, false, actorBuilder);
     }
 
     void deregisterActor(String id) {
@@ -126,6 +142,19 @@ public class ActorSystem {
         }
     }
 
+    void dispatchSystem(ActorRef targetActorRef, SystemActorMessage actorMessage) {
+        ActorRunner targetActorRunner = actorIdToActorRunnerMap.get(targetActorRef.getActorInfo().getId());
+
+        if (targetActorRunner == null) {
+            throw new ActorNotFoundException(targetActorRef.getActorInfo().toString());
+        }
+
+        boolean offerSuccess = targetActorRunner.offer(actorMessage);
+        if (!offerSuccess) {
+            throw new TargetActorRejectException(targetActorRef.getActorInfo().toString());
+        }
+    }
+
     private void dispatch(ActorRef targetActorRef, ActorMessage actorMessage) {
         String targetActorId = targetActorRef.getActorInfo().getId();
 
@@ -141,9 +170,10 @@ public class ActorSystem {
         }
     }
 
-    public void publishActor(ActorInfo actorInfo) {
-        checkClusterSystem();
-
-        clusterSystem.registerActor(actorInfo);
-    }
+    // publish 放到 actorrunner 里面，register actor 的时候传参数是否需要 publish，如果 publish，则利用系统消息投递到 actor 内部执行 publish，在初始化之后 publish
+//    public void publishActor(ActorInfo actorInfo) {
+//        checkClusterSystem();
+//
+//        clusterSystem.registerActor(actorInfo);
+//    }
 }

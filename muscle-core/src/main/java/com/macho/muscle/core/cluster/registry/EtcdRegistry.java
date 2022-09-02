@@ -9,6 +9,7 @@ import io.etcd.jetcd.KeyValue;
 import io.etcd.jetcd.kv.GetResponse;
 import io.etcd.jetcd.kv.PutResponse;
 import io.etcd.jetcd.lease.LeaseGrantResponse;
+import io.etcd.jetcd.lease.LeaseKeepAliveResponse;
 import io.etcd.jetcd.options.GetOption;
 import io.etcd.jetcd.options.PutOption;
 import io.etcd.jetcd.options.WatchOption;
@@ -31,8 +32,8 @@ public class EtcdRegistry implements Registry {
     }
 
     @Override
-    public CompletableFuture<Boolean> registry(String key, ActorInfo actorInfo, long leaseSeconds) {
-        CompletableFuture<Boolean> resultFuture = new CompletableFuture<>();
+    public CompletableFuture<Long> registry(String key, ActorInfo actorInfo, long leaseSeconds) {
+        CompletableFuture<Long> resultFuture = new CompletableFuture<>();
 
         String value = JsonUtil.toJsonString(actorInfo);
 
@@ -61,9 +62,26 @@ public class EtcdRegistry implements Registry {
                     return;
                 }
 
-                resultFuture.complete(Boolean.TRUE);
+                resultFuture.complete(leaseResult.getID());
             });
 
+        });
+
+        return resultFuture;
+    }
+
+    @Override
+    public CompletableFuture<Long> keepAlive(long leaseKey) {
+        CompletableFuture<Long> resultFuture = new CompletableFuture<>();
+
+        CompletableFuture<LeaseKeepAliveResponse> keepAliveFuture = client.getLeaseClient().keepAliveOnce(leaseKey);
+        keepAliveFuture.whenComplete((res, err) -> {
+            if (err != null) {
+                resultFuture.completeExceptionally(err);
+                return;
+            }
+
+            resultFuture.complete(res.getID());
         });
 
         return resultFuture;

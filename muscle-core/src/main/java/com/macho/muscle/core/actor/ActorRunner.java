@@ -1,12 +1,14 @@
 package com.macho.muscle.core.actor;
 
+import com.macho.muscle.core.cluster.ClusterSystem;
 import com.macho.muscle.core.exception.ActorIsStoppedException;
+import com.macho.muscle.core.exception.ActorPublishFailedException;
+import com.macho.muscle.core.utils.FutureUtil;
 import lombok.extern.slf4j.Slf4j;
 import org.jctools.queues.MpscArrayQueue;
 
 import java.util.Queue;
-import java.util.concurrent.Executor;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
@@ -24,6 +26,8 @@ public abstract class ActorRunner implements Runnable {
     private AtomicReference<ActorStatusEnum> actorStatus = new AtomicReference<>(ActorStatusEnum.CREATING);
 
     private AtomicReference<RunningStatus> runningStatus = new AtomicReference<>(RunningStatus.SUSPENDED);
+
+    private long leaseId;
 
     public ActorRunner(ActorRef actorRef, int queueCapacity, Executor executor, ActorSystem actorSystem) {
         this.actorRef = actorRef;
@@ -99,9 +103,41 @@ public abstract class ActorRunner implements Runnable {
         }
     }
 
+    protected void publish() {
+        CompletableFuture<Long> publishFuture = actorSystem.getClusterSystem().registerActor(selfActorRef().getActorInfo());
+
+        FutureUtil.attachFuture(publishFuture, (res, err) -> {
+            if (err != null) {
+                onException(new ActorPublishFailedException(
+                        selfActorRef().getActorInfo().getId(),
+                        err.getMessage())
+                );
+                return;
+            }
+
+            leaseId = res;
+
+            scheduleKeepAliveTimeout();
+        });
+    }
+
+    private void scheduleKeepAliveTimeout() {
+        actorSystem.getTimer().newTimeout((timeout) -> {
+            actorSystem.dispatchSystem(selfActorRef(), SystemActorMessage.KEEP_ALIVE_MESSAGE);
+        }, ClusterSystem.LEASE_SECONDS / 2, TimeUnit.SECONDS);
+    }
+
+    protected void keepAlive() {
+        FutureUtil.attachFuture(actorSystem.getClusterSystem().keepAlive(leaseId), (res, err) -> {
+            // todo process keep alive result and exception
+
+            scheduleKeepAliveTimeout();
+        });
+    }
+
     private void processSystemMessage(SystemActorMessage systemActorMessage) {
         switch (systemActorMessage) {
-            case START_MESSAGE:
+            case START_MESSAGE: {
                 actorStatus.set(ActorStatusEnum.RUNNING);
 
                 try {
@@ -113,11 +149,21 @@ public abstract class ActorRunner implements Runnable {
                         log.error("Unprocessed exception", ee);
                     }
                 }
-                break;
-            case STOP_MESSAGE:
+            }
+            break;
+            case PUBLISH_MESSAGE: {
+                publish();
+            }
+            break;
+            case KEEP_ALIVE_MESSAGE: {
+                keepAlive();
+            }
+            break;
+            case STOP_MESSAGE: {
 
                 stop();
-                break;
+            }
+            break;
             default:
                 throw new IllegalStateException("Unexpected SystemActorMessage value: " + systemActorMessage);
         }
