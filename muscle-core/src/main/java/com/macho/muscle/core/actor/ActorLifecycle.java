@@ -1,7 +1,7 @@
 package com.macho.muscle.core.actor;
 
 public interface ActorLifecycle {
-    void onException(Exception e);
+    void onException(Throwable e);
 
     void onStart();
 

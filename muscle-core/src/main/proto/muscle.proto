@@ -19,7 +19,8 @@ message TransferMessage {
   int32 type = 1;
   ActorInfo sourceActorInfo = 2;
   ActorInfo targetActorInfo = 3;
-  bytes data = 4;
+  string fullMethodName = 4;
+  bytes data = 5;
 }
 
 message TransferMessageRequest {
@@ -34,6 +35,8 @@ message TransferMessageResponse {
 
   ResponseCode code = 1;
   string msg = 2;
+  bytes data = 3;
+  bytes exception = 4;
 }
 
 service MuscleTransfer {

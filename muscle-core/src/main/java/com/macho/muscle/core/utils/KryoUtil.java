@@ -3,7 +3,6 @@ package com.macho.muscle.core.utils;
 import com.esotericsoftware.kryo.kryo5.Kryo;
 import com.esotericsoftware.kryo.kryo5.io.Input;
 import com.esotericsoftware.kryo.kryo5.io.Output;
-import com.macho.muscle.core.actor.invoke.ReflectInvokeRequestMessage;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -14,7 +13,7 @@ public class KryoUtil {
         Kryo kryo = new Kryo();
 
         kryo.setRegistrationRequired(false);
-        kryo.register(ReflectInvokeRequestMessage.class);
+
         kryo.register(Object[].class);
 
         return kryo;

@@ -1,7 +1,7 @@
 package com.macho.muscle.core.cluster.registry;
 
 import com.google.common.collect.Lists;
-import com.macho.muscle.core.actor.ActorInfo;
+import com.macho.muscle.core.nactor.ActorInfo;
 import com.macho.muscle.core.utils.JsonUtil;
 import io.etcd.jetcd.ByteSequence;
 import io.etcd.jetcd.Client;
