@@ -8,6 +8,7 @@ import com.macho.muscle.core.actor.ActorInfo;
 import com.macho.muscle.core.actor.MuscleSystem;
 import com.macho.muscle.core.utils.NetUtil;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,14 @@ public class ClusterSystem {
         Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(serviceName);
 
         return Lists.newArrayList(actorIdToClusterNodeMap.keySet());
+    }
+
+    public ClusterNode getClusterNodeWithServiceAndActorId(String service, String actorId) {
+        Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(service);
+        if (MapUtils.isNotEmpty(actorIdToClusterNodeMap)) {
+            return actorIdToClusterNodeMap.get(actorId);
+        }
+        return null;
     }
 
     public CompletableFuture<Long> publishActor(ActorInfo actorInfo) {

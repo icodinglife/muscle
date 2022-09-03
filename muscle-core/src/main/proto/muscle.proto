@@ -16,11 +16,9 @@ message ActorInfo {
 }
 
 message TransferMessage {
-  int32 type = 1;
-  ActorInfo sourceActorInfo = 2;
-  ActorInfo targetActorInfo = 3;
-  string fullMethodName = 4;
-  bytes data = 5;
+  ActorInfo targetActorInfo = 1;
+  string fullMethodName = 2;
+  bytes data = 3;
 }
 
 message TransferMessageRequest {

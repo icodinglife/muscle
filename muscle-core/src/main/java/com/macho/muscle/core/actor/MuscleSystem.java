@@ -20,6 +20,8 @@ import static java.util.concurrent.Executors.*;
 public class MuscleSystem {
     private static final Logger logger = LoggerFactory.getLogger(MuscleSystem.class);
 
+    public static final boolean PUBLISH = Boolean.TRUE;
+
     private final Map<String, ActorContainer<? extends ActorLifecycle>> actorIdToContainerMap = Maps.newConcurrentMap();
 
     private final Timer timer = new HashedWheelTimer();
@@ -46,27 +48,40 @@ public class MuscleSystem {
     }
 
     public <T extends ActorLifecycle> T newInvokeProxy(String actorId, String service, Class<T> targetClass) {
+        return newInvokeProxy(actorId, service, targetClass, false);
+    }
+
+    public <T extends ActorLifecycle> T newInvokeProxy(String actorId, String service, Class<T> targetClass, boolean remote) {
         return (T) Proxy.newProxyInstance(
                 targetClass.getClassLoader(),
                 new Class[]{targetClass},
                 new InvokeProxy<T>(
                         buildActorRef(actorId, service, clusterSystem == null ? null : clusterSystem.getNodeInfo()),
                         targetClass,
-                        this
+                        this,
+                        remote
                 )
         );
     }
 
+
     public <T extends ActorLifecycle> ActorContainer<? extends ActorLifecycle> registerActor(String actorId, String service, T target, int queueCapacity) {
-        return actorIdToContainerMap.computeIfAbsent(actorId, (id) -> initActorContainer(id, service, target, queueCapacity));
+        return registerActor(actorId, service, target, queueCapacity, !PUBLISH);
     }
 
-    private <T extends ActorLifecycle> ActorContainer<? extends ActorLifecycle> initActorContainer(String actorId, String service, T target, int queueCapacity) {
+    public <T extends ActorLifecycle> ActorContainer<? extends ActorLifecycle> registerActor(String actorId, String service, T target, int queueCapacity, boolean publish) {
+        return actorIdToContainerMap.computeIfAbsent(actorId, (id) -> initActorContainer(id, service, target, queueCapacity, publish));
+    }
+
+    private <T extends ActorLifecycle> ActorContainer<? extends ActorLifecycle> initActorContainer(String actorId, String service, T target, int queueCapacity, boolean publish) {
         ActorRef actorRef = buildActorRef(actorId, service, clusterSystem == null ? null : clusterSystem.getNodeInfo());
 
         ActorContainer<T> actorContainer = new ActorContainer<>(this, actorRef, target, queueCapacity);
 
         actorContainer.schedule(new StartTask());
+        if (publish) {
+            actorContainer.schedule(new PublishTask());
+        }
 
         executor.execute(actorContainer);
 

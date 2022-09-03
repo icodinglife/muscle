@@ -36,13 +36,18 @@ public class GrpcMessageTransportService extends MuscleTransferGrpc.MuscleTransf
         muscleSystem.dispatch(targetActorInfo.getId(), invokeTask);
 
         future.whenComplete((res, err) -> {
-            TransferMessageResponse transferMessageResponse = TransferMessageResponse.newBuilder()
-                    .setCode(err != null ? TransferMessageResponse.ResponseCode.FAILURE : TransferMessageResponse.ResponseCode.SUCCESS)
-                    .setData(res != null ? ByteString.copyFrom(KryoUtil.serialize(res)) : null)
-                    .setException(err != null ? ByteString.copyFrom(KryoUtil.serialize(err)) : null)
-                    .build();
+            try {
+                TransferMessageResponse transferMessageResponse = TransferMessageResponse.newBuilder()
+                        .setCode(err != null ? TransferMessageResponse.ResponseCode.FAILURE : TransferMessageResponse.ResponseCode.SUCCESS)
+                        .setData(res != null ? ByteString.copyFrom(KryoUtil.serialize(res)) : ByteString.EMPTY)
+                        .setException(err != null ? ByteString.copyFrom(KryoUtil.serialize(err)) : ByteString.EMPTY)
+                        .build();
 
-            responseObserver.onNext(transferMessageResponse);
+                responseObserver.onNext(transferMessageResponse);
+            } catch (Throwable e) {
+                responseObserver.onError(e);
+            }
+
             responseObserver.onCompleted();
         });
     }

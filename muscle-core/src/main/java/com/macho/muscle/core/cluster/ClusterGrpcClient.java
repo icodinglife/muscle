@@ -27,14 +27,14 @@ public class ClusterGrpcClient implements MessageTransport {
     public CompletableFuture<Object> transfer(TransportActorMessage message) {
         TransferMessageRequest transferMessageRequest = TransferMessageRequest.newBuilder()
                 .setMessage(TransferMessage.newBuilder()
-                        .setSourceActorInfo(ActorInfo.newBuilder()
-                                .setId(message.getSourceActorInfo().getId())
-                                .setService(message.getSourceActorInfo().getService())
-                                .setNodeInfo(com.macho.muscle.core.cluster.proto.NodeInfo.newBuilder()
-                                        .setHost(message.getSourceActorInfo().getNodeInfo().getHost())
-                                        .setPort(message.getSourceActorInfo().getNodeInfo().getPort())
-                                        .build())
-                                .build())
+//                        .setSourceActorInfo(ActorInfo.newBuilder()
+//                                .setId(message.getSourceActorInfo().getId())
+//                                .setService(message.getSourceActorInfo().getService())
+//                                .setNodeInfo(com.macho.muscle.core.cluster.proto.NodeInfo.newBuilder()
+//                                        .setHost(message.getSourceActorInfo().getNodeInfo().getHost())
+//                                        .setPort(message.getSourceActorInfo().getNodeInfo().getPort())
+//                                        .build())
+//                                .build())
                         .setTargetActorInfo(ActorInfo.newBuilder()
                                 .setId(message.getTargetActorInfo().getId())
                                 .setService(message.getTargetActorInfo().getService())
@@ -58,8 +58,8 @@ public class ClusterGrpcClient implements MessageTransport {
                 if (transferMessageResponse.getCode().equals(TransferMessageResponse.ResponseCode.SUCCESS)) {
 
                     resultFuture.complete(KryoUtil.deserialize(transferMessageResponse.getData().toByteArray()));
-
                 } else {
+
                     resultFuture.completeExceptionally(KryoUtil.deserialize(transferMessageResponse.getData().toByteArray()));
                 }
 
