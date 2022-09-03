@@ -5,7 +5,6 @@ import org.junit.Test;
 import org.springframework.util.CollectionUtils;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
