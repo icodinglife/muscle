@@ -3,9 +3,7 @@ package com.macho.muscle.core.actor;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.macho.muscle.core.utils.MuscleReflectUtil;
-import lombok.Builder;
-import lombok.Data;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
@@ -51,15 +49,10 @@ public class MethodInvokeHelper<T> {
 
         MethodHandle methodHandle = methodNameToIndexMap.get(fullMethodName);
         List<Object> argList = Lists.newArrayList(target);
-        argList.addAll(Arrays.stream(args).toList());
+        if (args != null && args.length > 0) {
+            argList.addAll(Arrays.stream(args).toList());
+        }
 
         return (R) methodHandle.invokeWithArguments(argList);
-    }
-
-    @Data
-    @Builder
-    public static class MethodInvokeProperties {
-        private final boolean returnVoid;
-        private final int invokeIndex;
     }
 }

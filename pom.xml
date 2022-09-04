@@ -30,6 +30,11 @@
         <kryo5.version>5.3.0</kryo5.version>
         <gson.version>2.9.1</gson.version>
         <commons.collection4.version>4.3</commons.collection4.version>
+        <jmh.version>1.23</jmh.version>
+        <commons.lang3.version>3.12.0</commons.lang3.version>
+        <log4j.version>2.18.0</log4j.version>
+        <log4j.slf4j.version>2.13.3</log4j.slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
     </properties>
 
     <modules>
@@ -112,6 +117,61 @@
                 <version>${commons.collection4.version}</version>
             </dependency>
             <!-- commons-collections4 -->
+
+            <!-- jmh -->
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-core</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.openjdk.jmh</groupId>
+                <artifactId>jmh-generator-annprocess</artifactId>
+                <version>${jmh.version}</version>
+            </dependency>
+            <!-- jmh -->
+
+            <!-- common-lang -->
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${commons.lang3.version}</version>
+            </dependency>
+            <!-- common-lang -->
+
+            <!-- log4j2 -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-slf4j-impl</artifactId>
+                <version>${log4j.slf4j.version}</version>
+            </dependency>
+            <!--            <dependency>-->
+            <!--                <groupId>org.apache.logging.log4j</groupId>-->
+            <!--                <artifactId>log4j-slf4j18-impl</artifactId>-->
+            <!--                <version>${log4j.slf4j.version}</version>-->
+            <!--            </dependency>-->
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-core</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-jcl</artifactId>
+                <version>${log4j.version}</version>
+            </dependency>
+            <!-- log4j2 -->
+
         </dependencies>
     </dependencyManagement>
 
@@ -131,7 +191,7 @@
                 <configuration>
                     <compilerArgs>
                         <compilerArg>--enable-preview</compilerArg>
-                        <compilerArg>--add-modules jdk.incubator.concurrent</compilerArg>
+                        <!--                        <compilerArg>&#45;&#45;add-modules jdk.incubator.concurrent</compilerArg>-->
                     </compilerArgs>
                 </configuration>
             </plugin>
@@ -182,21 +242,21 @@
                 </executions>
             </plugin>
             <!-- Mandatory plugins for using Spock -->
-            <plugin>
-                <!-- The gmavenplus plugin is used to compile Groovy code. To learn more about this plugin,
-                visit https://github.com/groovy/GMavenPlus/wiki -->
-                <groupId>org.codehaus.gmavenplus</groupId>
-                <artifactId>gmavenplus-plugin</artifactId>
-                <version>1.12.0</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>compile</goal>
-                            <goal>compileTests</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
+            <!--            <plugin>-->
+            <!-- The gmavenplus plugin is used to compile Groovy code. To learn more about this plugin,
+            visit https://github.com/groovy/GMavenPlus/wiki -->
+            <!--                <groupId>org.codehaus.gmavenplus</groupId>-->
+            <!--                <artifactId>gmavenplus-plugin</artifactId>-->
+            <!--                <version>1.12.0</version>-->
+            <!--                <executions>-->
+            <!--                    <execution>-->
+            <!--                        <goals>-->
+            <!--                            <goal>compile</goal>-->
+            <!--                            <goal>compileTests</goal>-->
+            <!--                        </goals>-->
+            <!--                    </execution>-->
+            <!--                </executions>-->
+            <!--            </plugin>-->
             <!-- Optional plugins for using Spock -->
             <!-- Only required if names of spec classes don't match default Surefire patterns (`*Test` etc.) -->
             <plugin>

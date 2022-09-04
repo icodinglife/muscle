@@ -3,12 +3,14 @@ package com.macho.muscle.core.cluster;
 import com.macho.muscle.core.actor.MuscleSystem;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-@Slf4j
 public class ClusterGrpcServer {
+    private static final Logger logger = LoggerFactory.getLogger(ClusterGrpcServer.class);
+
     private final NodeInfo nodeInfo;
     private final GrpcMessageTransportService grpcMessageTransportService;
     private Server server;

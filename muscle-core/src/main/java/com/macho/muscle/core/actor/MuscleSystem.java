@@ -5,7 +5,6 @@ import com.macho.muscle.core.exception.ActorNotFoundException;
 import com.macho.muscle.core.cluster.ClusterSystem;
 import com.macho.muscle.core.cluster.NodeInfo;
 import io.netty.util.HashedWheelTimer;
-import io.netty.util.Timer;
 import io.netty.util.TimerTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import java.lang.reflect.Proxy;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.concurrent.Executors.*;
@@ -24,13 +24,15 @@ public class MuscleSystem {
 
     private final Map<String, ActorContainer<? extends ActorLifecycle>> actorIdToContainerMap = Maps.newConcurrentMap();
 
-    private final Timer timer = new HashedWheelTimer();
+    private final HashedWheelTimer timer = new HashedWheelTimer();
 
     private final Executor executor;
     private ClusterSystem clusterSystem;
 
     public MuscleSystem() {
         executor = newVirtualThreadPerTaskExecutor();
+
+        timer.start();
     }
 
     public void startCluster(String etcdAddr, int port) {
@@ -112,5 +114,27 @@ public class MuscleSystem {
 
     public void schedule(TimerTask task, long delay, TimeUnit timeUnit) {
         timer.newTimeout(task, delay, timeUnit);
+    }
+
+    public void shutdown() {
+        for (Map.Entry<String, ActorContainer<? extends ActorLifecycle>> entry : actorIdToContainerMap.entrySet()) {
+            dispatch(entry.getKey(), new StopTask<>());
+        }
+
+        if (actorIdToContainerMap.size() > 0) {
+            logger.warn("also has actor in the system.");
+        }
+
+        this.timer.stop();
+        ExecutorService executorService = (ExecutorService) executor;
+        executorService.shutdown();
+    }
+
+    public void stopActor(String actorId) {
+        dispatch(actorId, new StopTask<>());
+    }
+
+    void removeActor(String actorId) {
+        actorIdToContainerMap.remove(actorId);
     }
 }

@@ -82,5 +82,7 @@ public class ActorContainer<T extends ActorLifecycle> implements Runnable {
 
     void stop() {
         this.actorStatus = ActorStatusEnum.STOPPED;
+
+        muscleSystem.removeActor(selfRef.getActorInfo().getId());
     }
 }
