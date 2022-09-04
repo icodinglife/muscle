@@ -1,5 +1,6 @@
 package com.macho.muscle.core.actor;
 
+import com.macho.muscle.core.cluster.NodeInfo;
 import org.apache.commons.collections4.CollectionUtils;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
@@ -60,4 +61,25 @@ public class ClusterInvokeTest {
         log.info("hello, {}", hello2);
     }
 
+    @Test
+    public void testWatch() throws InterruptedException, IOException {
+        MuscleSystem muscleSystem = new MuscleSystem();
+        muscleSystem.startCluster(ETCD_ADDR, 16669);
+
+        TimeUnit.SECONDS.sleep(3);
+
+        List<String> svc1 = muscleSystem.getClusterSystem().getActorIdsWithService("svc1");
+        if (CollectionUtils.isEmpty(svc1)) {
+            throw new RuntimeException("actor list is empty");
+        }
+
+        NodeInfo nodeInfo = muscleSystem.getClusterSystem().getNodeInfoOfActor("svc1", svc1.get(0));
+        ActorInfo actorInfo = new ActorInfo(svc1.get(0), "svc1", nodeInfo);
+
+        muscleSystem.watchActorStop(null, actorInfo, (act) -> {
+            log.info("remote actor is stopped.");
+        });
+
+        System.in.read();
+    }
 }

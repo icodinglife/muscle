@@ -142,7 +142,13 @@ public class MuscleSystem {
     public <T extends ActorLifecycle> void watchActorStop(ActorRef selfRef, ActorInfo remoteActorInfo, Consumer<T> whenStop) {
         clusterSystem.watchRemoteActorStop(
                 remoteActorInfo,
-                () -> dispatch(selfRef.getActorInfo().getId(), new FunctionCallTask<>(whenStop))
+                () -> {
+                    if (selfRef != null) {
+                        dispatch(selfRef.getActorInfo().getId(), new FunctionCallTask<>(whenStop));
+                    } else {
+                        whenStop.accept(null);
+                    }
+                }
         );
     }
 }

@@ -12,6 +12,7 @@ import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.w3c.dom.Node;
 
 import java.io.IOException;
 import java.util.List;
@@ -57,6 +58,16 @@ public class ClusterSystem {
         Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap.get(serviceName);
 
         return Lists.newArrayList(actorIdToNodeInfoMap.keySet());
+    }
+
+    public NodeInfo getNodeInfoOfActor(String service, String actorId) {
+        Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap.get(service);
+
+        if (MapUtils.isNotEmpty(actorIdToNodeInfoMap)) {
+            return actorIdToNodeInfoMap.get(actorId);
+        }
+
+        return null;
     }
 
     public ClusterNode getClusterNodeWithServiceAndActorId(String service, String actorId) {
