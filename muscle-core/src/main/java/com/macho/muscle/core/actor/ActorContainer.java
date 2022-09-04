@@ -53,8 +53,8 @@ public class ActorContainer<T extends ActorLifecycle> implements Runnable {
                     cancelAllTasks();
                     return;
                 }
-            } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+            } catch (Throwable e) {
+                target.onException(e);
             }
         }
     }

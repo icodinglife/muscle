@@ -29,7 +29,8 @@ public class ClusterSystem {
 
     private ClusterGrpcServer clusterServer;
 
-    private final Map<String, Map<String, ClusterNode>> remoteServiceNameToClusterNodesMap = Maps.newConcurrentMap();
+    private final Map<String, Map<String, NodeInfo>> remoteServiceNameToNodeInfoMap = Maps.newConcurrentMap();
+    private final Map<NodeInfo, ClusterNode> nodeInfoToClusterNodeMap = Maps.newConcurrentMap();
 
     public ClusterSystem(String etcdAddr, int localNodePort) {
         this.registry = new EtcdRegistry(etcdAddr);
@@ -53,15 +54,18 @@ public class ClusterSystem {
     }
 
     public List<String> getActorIdsWithService(String serviceName) {
-        Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(serviceName);
+        Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap.get(serviceName);
 
-        return Lists.newArrayList(actorIdToClusterNodeMap.keySet());
+        return Lists.newArrayList(actorIdToNodeInfoMap.keySet());
     }
 
     public ClusterNode getClusterNodeWithServiceAndActorId(String service, String actorId) {
-        Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(service);
-        if (MapUtils.isNotEmpty(actorIdToClusterNodeMap)) {
-            return actorIdToClusterNodeMap.get(actorId);
+        Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap.get(service);
+        if (MapUtils.isNotEmpty(actorIdToNodeInfoMap)) {
+            NodeInfo nodeInfo = actorIdToNodeInfoMap.get(actorId);
+            if (nodeInfo != null) {
+                return nodeInfoToClusterNodeMap.get(nodeInfo);
+            }
         }
         return null;
     }
@@ -84,6 +88,14 @@ public class ClusterSystem {
         CompletableFuture<Long> keepAliveFuture = registry.keepAlive(leaseId);
 
         return keepAliveFuture;
+    }
+
+    public void watchRemoteActorStop(ActorInfo remoteActorInfo, Runnable whenStop) {
+        registry.watchPrefix(remoteActorInfo.getActorPath(SERVICE_PREFIX),
+                (l) -> {
+                },
+                (stopList) -> whenStop.run()
+        );
     }
 
     private void checkClusterServer() {
@@ -115,12 +127,12 @@ public class ClusterSystem {
     private void removeRemoteActors(List<ActorInfo> actorInfoList) {
         if (CollectionUtils.isNotEmpty(actorInfoList)) {
             for (ActorInfo actorInfo : actorInfoList) {
-                if (remoteServiceNameToClusterNodesMap.containsKey(actorInfo.getService())) {
-                    Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap.get(actorInfo.getService());
-                    if (actorIdToClusterNodeMap != null) {
-                        ClusterNode clusterNode = actorIdToClusterNodeMap.remove(actorInfo.getId());
-                        if (clusterNode != null) {
-                            clusterNode.disconnect();
+                if (remoteServiceNameToNodeInfoMap.containsKey(actorInfo.getService())) {
+                    Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap.get(actorInfo.getService());
+                    if (actorIdToNodeInfoMap != null) {
+                        NodeInfo nodeInfo = actorIdToNodeInfoMap.remove(actorInfo.getId());
+                        if (nodeInfo != null) {
+                            // don't close connection when remove remote actor.
                         }
                     }
                 }
@@ -131,13 +143,13 @@ public class ClusterSystem {
     private void setupRemoteActors(List<ActorInfo> actorInfoList) {
         if (CollectionUtils.isNotEmpty(actorInfoList)) {
             for (ActorInfo actorInfo : actorInfoList) {
-                Map<String, ClusterNode> actorIdToClusterNodeMap = remoteServiceNameToClusterNodesMap
+                Map<String, NodeInfo> actorIdToNodeInfoMap = remoteServiceNameToNodeInfoMap
                         .computeIfAbsent(actorInfo.getService(), (k) -> Maps.newConcurrentMap());
 
-                actorIdToClusterNodeMap.computeIfAbsent(actorInfo.getId(), (k) -> {
-                    NodeInfo remoteNodeInfo = actorInfo.getNodeInfo();
+                NodeInfo remoteNodeInfo = actorIdToNodeInfoMap.computeIfAbsent(actorInfo.getId(), (k) -> actorInfo.getNodeInfo());
 
-                    ClusterGrpcClient client = new ClusterGrpcClient(remoteNodeInfo);
+                nodeInfoToClusterNodeMap.computeIfAbsent(remoteNodeInfo, (info) -> {
+                    ClusterGrpcClient client = new ClusterGrpcClient(info);
 
                     return new ClusterNode(remoteNodeInfo, client);
                 });

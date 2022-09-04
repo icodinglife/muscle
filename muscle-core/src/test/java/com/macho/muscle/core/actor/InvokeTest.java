@@ -1,10 +1,12 @@
 package com.macho.muscle.core.actor;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-@Slf4j
 public class InvokeTest {
+    private static final Logger log = LoggerFactory.getLogger(InvokeTest.class);
+
     @Test
     public void testInvoke() {
         String actorId = "abc";

@@ -144,6 +144,14 @@
             <artifactId>log4j-jcl</artifactId>
         </dependency>
         <!-- log4j -->
+
+        <!-- junit5 -->
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- junit5 -->
     </dependencies>
 
     <build>

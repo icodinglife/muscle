@@ -14,6 +14,7 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.Executors.*;
 
@@ -136,5 +137,12 @@ public class MuscleSystem {
 
     void removeActor(String actorId) {
         actorIdToContainerMap.remove(actorId);
+    }
+
+    public <T extends ActorLifecycle> void watchActorStop(ActorRef selfRef, ActorInfo remoteActorInfo, Consumer<T> whenStop) {
+        clusterSystem.watchRemoteActorStop(
+                remoteActorInfo,
+                () -> dispatch(selfRef.getActorInfo().getId(), new FunctionCallTask<>(whenStop))
+        );
     }
 }

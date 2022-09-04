@@ -1,8 +1,9 @@
 package com.macho.muscle.core.actor;
 
-import lombok.extern.slf4j.Slf4j;
-import org.junit.Test;
-import org.springframework.util.CollectionUtils;
+import org.apache.commons.collections4.CollectionUtils;
+import org.junit.jupiter.api.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.List;
@@ -10,8 +11,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.macho.muscle.core.actor.MuscleSystem.PUBLISH;
 
-@Slf4j
 public class ClusterInvokeTest {
+    private static final Logger log = LoggerFactory.getLogger(ClusterInvokeTest.class);
+
     private static final String ETCD_ADDR = "ip:///127.0.0.1:2379";
 
     @Test
