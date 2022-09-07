@@ -1,11 +1,11 @@
 package com.macho.muscle.core.actor;
 
 import com.macho.muscle.core.exception.ActorIsStoppedException;
-import org.jctools.queues.MpscBlockingConsumerArrayQueue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class ActorContainer<T extends ActorLifecycle> implements Runnable {
     private static final Logger logger = LoggerFactory.getLogger(ActorContainer.class);
@@ -22,7 +22,7 @@ public class ActorContainer<T extends ActorLifecycle> implements Runnable {
         this.muscleSystem = muscleSystem;
         this.selfRef = actorRef;
         this.target = target;
-        this.tasks = new MpscBlockingConsumerArrayQueue<>(taskQueueSize);
+        this.tasks = new LinkedBlockingQueue<>(taskQueueSize);
     }
 
     T getTarget() {
@@ -73,7 +73,12 @@ public class ActorContainer<T extends ActorLifecycle> implements Runnable {
             throw new ActorIsStoppedException(selfRef.getActorInfo().getId());
         }
 
-        return tasks.add(task);
+        try {
+            tasks.put(task);
+            return true;
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     void start() {
