@@ -16,6 +16,7 @@ import java.io.*;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 public class WordCount {
     private static final Logger logger = LoggerFactory.getLogger(WordCount.class);
@@ -23,8 +24,8 @@ public class WordCount {
     private static final String FileName = "/Users/hunter/develop/workspace/mine/muscle/muscle-core/src/test/resources/test.txt";
 
     public static void main(String[] args) throws IOException {
-        readTest();
-//        workerTest();
+//        readTest();
+        workerTest();
     }
 
     private static void readTest() throws IOException {
@@ -56,7 +57,7 @@ public class WordCount {
         stopwatch.stop();
         logger.info("time:{}", stopwatch.getNanoTime() / 1_000_000);
 
-        MapUtils.debugPrint(System.out, "word-count", resultMap);
+        MapUtils.debugPrint(System.out, "word-count", new TreeMap<>(resultMap));
     }
 
     private static void workerTest() {
@@ -79,7 +80,8 @@ public class WordCount {
         stopwatch.stop();
         logger.info("time:{}", stopwatch.getNanoTime() / 1_000_000);
 
-        MapUtils.debugPrint(System.out, "word-count", stringIntegerMap);
+        MapUtils.debugPrint(System.out, "word-count", new TreeMap<>(stringIntegerMap));
+        muscleSystem.shutdown();
     }
 
     public interface IMaster extends ActorLifecycle {

@@ -122,13 +122,19 @@ public class MuscleSystem {
             dispatch(entry.getKey(), new StopTask<>());
         }
 
+        this.timer.stop();
+        ExecutorService executorService = (ExecutorService) executor;
+
+        try {
+            executorService.awaitTermination(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            logger.error("shutdown is interrupted", e);
+        }
+
         if (actorIdToContainerMap.size() > 0) {
             logger.warn("also has actor in the system.");
         }
 
-        this.timer.stop();
-        ExecutorService executorService = (ExecutorService) executor;
-        executorService.shutdown();
     }
 
     public void stopActor(String actorId) {

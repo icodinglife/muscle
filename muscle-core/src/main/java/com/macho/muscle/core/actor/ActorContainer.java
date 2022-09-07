@@ -73,12 +73,18 @@ public class ActorContainer<T extends ActorLifecycle> implements Runnable {
             throw new ActorIsStoppedException(selfRef.getActorInfo().getId());
         }
 
-        try {
-            tasks.put(task);
-            return true;
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+        boolean putSuccess = false;
+        do {
+            try {
+                tasks.put(task);
+
+                putSuccess = true;
+            } catch (InterruptedException e) {
+                logger.warn(String.format("actor[%s] put task is interrupted.", selfRef.getActorInfo().getId()), e);
+            }
+        } while (!putSuccess);
+
+        return true;
     }
 
     void start() {
